@@ -1,0 +1,63 @@
+services:
+  # Web Server (Nginx)
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+    volumes:
+      - .:/var/www
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf
+    depends_on:
+      - php
+    networks:
+      - pharmasys-network
+
+  # PHP-FPM
+  php:
+    build: .
+    volumes:
+      - .:/var/www
+      - ./storage:/var/www/storage
+    depends_on:
+      - database
+    networks:
+      - pharmasys-network
+    environment:
+      - DB_CONNECTION=pgsql
+      - DB_HOST=database
+      - DB_PORT=5432
+      - DB_DATABASE=db_pharmasys
+      - DB_USERNAME=postgres
+      - DB_PASSWORD=postgres
+
+  # PostgreSQL Database
+  database:
+    image: postgres:latest
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=db_pharmasys
+    networks:
+      - pharmasys-network
+
+  # Composer (untuk menjalankan perintah composer)
+  composer:
+    image: docker.io/composer/composer:2
+    volumes:
+      - .:/var/www
+    working_dir: /var/www
+    command: ["true"]
+    networks:
+      - pharmasys-network
+
+networks:
+  pharmasys-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+    driver: local
